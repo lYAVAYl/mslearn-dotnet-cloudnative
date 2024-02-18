@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefrontend
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: storefrontend
+    spec:
+      containers:
+      - name: storefrontend
+        # We're specifying a different container to run under the deployment's spec.template.spec.containers.image value
+        image: yavay/storeimage:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_URLS
+          value: http://*:80
+        - name: ProductEndpoint
+          value: http://productsbackend
+        - name: ImagePrefix
+          value: http://localhost/images
+  selector:
+    matchLabels:
+      app: storefrontend
+# There's a new environment variable under the spec.template.spec.containers.env section. The code in the storefrontend application calls the backend, but because we did not specify a fully qualified domain name (FQDN), nor will we know the IP address of the backend microservice, we use the name we specified under the metadata.name node of the Deployment. Kubernetes will then take care of the rest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storefrontend
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 32000
+  selector:
+    app: storefrontend
